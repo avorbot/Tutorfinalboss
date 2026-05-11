@@ -8,20 +8,27 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("student")
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String
+  role           String   @default("student")
+  avatar         String?
+  dateOfBirth    DateTime?
+  country        String   @default("")
+  city           String   @default("")
+  educationLevel String   @default("")
+  phone          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   tutorProfile   TutorProfile?
   studentProfile StudentProfile?
-  enrollments    Enrollment[]    @relation("StudentEnrollments")
-  tutorSessions  Session[]       @relation("TutorSessions")
-  bookings       Booking[]       @relation("StudentBookings")
+  parentProfile  ParentProfile?
+  enrollments    Enrollment[]        @relation("StudentEnrollments")
+  tutorSessions  Session[]           @relation("TutorSessions")
+  bookings       Booking[]           @relation("StudentBookings")
+  submissions    ContentSubmission[] @relation("Submitter")
 }
 
 model TutorProfile {
@@ -54,6 +61,43 @@ model StudentProfile {
   updatedAt DateTime @updatedAt
 }
 
+model ParentProfile {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pin          String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  kidsAccounts KidsAccount[]
+}
+
+model KidsAccount {
+  id             String        @id @default(cuid())
+  parentId       String
+  parent         ParentProfile @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  name           String
+  age            Int
+  avatarId       String        @default("1")
+  points         Int           @default(0)
+  level          Int           @default(1)
+  badges         String        @default("[]")
+  favouriteColor String        @default("blue")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  progress KidsProgress[]
+}
+
+model KidsProgress {
+  id               String      @id @default(cuid())
+  kidsAccountId    String
+  kidsAccount      KidsAccount @relation(fields: [kidsAccountId], references: [id])
+  subject          String
+  lessonsCompleted Int         @default(0)
+  stars            Int         @default(0)
+  lastActivity     DateTime    @default(now())
+}
+
 model Session {
   id           String       @id @default(cuid())
   tutorId      String
@@ -71,8 +115,9 @@ model Session {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  enrollments Enrollment[]
-  bookings    Booking[]
+  enrollments  Enrollment[]
+  bookings     Booking[]
+  submissions  ContentSubmission[]
 }
 
 model Enrollment {
@@ -88,15 +133,53 @@ model Enrollment {
 }
 
 model Booking {
-  id          String   @id @default(cuid())
-  studentId   String
-  student     User     @relation("StudentBookings", fields: [studentId], references: [id])
-  sessionId   String
-  session     Session  @relation(fields: [sessionId], references: [id])
-  scheduledAt DateTime
-  status      String   @default("pending")
-  notes       String   @default("")
-  createdAt   DateTime @default(now())
+  id              String    @id @default(cuid())
+  studentId       String
+  student         User      @relation("StudentBookings", fields: [studentId], references: [id])
+  sessionId       String
+  session         Session   @relation(fields: [sessionId], references: [id])
+  scheduledAt     DateTime
+  status          String    @default("pending")
+  notes           String    @default("")
+  paymentStatus   String    @default("unpaid")
+  paymentMethod   String    @default("")
+  paymentIntentId String    @default("")
+  amountPaid      Float     @default(0)
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  payments Payment[]
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  bookingId    String
+  booking      Booking  @relation(fields: [bookingId], references: [id])
+  userId       String
+  amount       Float
+  currency     String
+  provider     String
+  providerTxId String
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+}
+
+model ContentSubmission {
+  id            String    @id @default(cuid())
+  submittedById String
+  submittedBy   User      @relation("Submitter", fields: [submittedById], references: [id])
+  sessionId     String?
+  session       Session?  @relation(fields: [sessionId], references: [id])
+  direction     String
+  type          String
+  title         String
+  content       String
+  description   String    @default("")
+  status        String    @default("pending")
+  reviewedById  String?
+  reviewNote    String    @default("")
+  createdAt     DateTime  @default(now())
+  reviewedAt    DateTime?
 }
 
 model Message {
