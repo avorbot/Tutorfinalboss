@@ -4,8 +4,36 @@ from datetime import date
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.shortcuts import redirect, render
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
+
+
+@login_required
+def _stub(request, **kwargs):
+    """Placeholder for pages that are in progress."""
+    label = request.resolver_match.url_name.replace("_", " ").title()
+    html = f"""<!DOCTYPE html>
+<html data-theme="dark"><head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{{--primary:#1a7a3c;--accent:#f97316;--bg:#0f172a;--text:#f1f5f9}}
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}}
+.card{{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:48px;text-align:center;max-width:480px}}
+h1{{font-family:Poppins,sans-serif;font-size:2rem;background:linear-gradient(135deg,#1a7a3c,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}}
+p{{color:#94a3b8;margin-bottom:24px}}
+a{{background:var(--primary);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600}}
+</style>
+</head><body>
+<div class="card">
+  <h1>{label}</h1>
+  <p>This page is coming soon.</p>
+  <a href="/dashboard/">&larr; Back to Dashboard</a>
+</div>
+</body></html>"""
+    return HttpResponse(html)
 
 
 def _get_profile(user):
@@ -44,14 +72,21 @@ def dashboard(request):
         from lms.djangoapps.sessions.models import TutorSession
         from lms.djangoapps.submissions.models import ContentSubmission
         from lms.djangoapps.tutors.models import TutorProfile
+        pending_tutors_qs = TutorProfile.objects.filter(verified=False).select_related("user")
+        pending_subs_qs = ContentSubmission.objects.filter(status="pending").select_related("submitted_by").order_by("-created_at")[:5]
+        recent_users_qs = User.objects.select_related("profile").order_by("-date_joined")[:5]
         ctx.update({
-            "total_users": User.objects.count(),
-            "total_tutors": UserProfile.objects.filter(role="tutor").count(),
-            "total_students": UserProfile.objects.filter(role="student").count(),
-            "total_sessions": TutorSession.objects.count(),
-            "pending_submissions": ContentSubmission.objects.filter(status="pending").count(),
-            "pending_approvals": TutorProfile.objects.filter(verified=False).count(),
-            "recent_users": UserProfile.objects.select_related("user").order_by("-created_at")[:5],
+            "stats": {
+                "total_users": User.objects.count(),
+                "total_tutors": UserProfile.objects.filter(role="tutor").count(),
+                "total_students": UserProfile.objects.filter(role="student").count(),
+                "total_sessions": TutorSession.objects.count(),
+                "total_revenue": "0.00",
+                "pending_tutors": pending_tutors_qs.count(),
+            },
+            "pending_tutors": pending_tutors_qs[:5],
+            "pending_submissions": pending_subs_qs,
+            "recent_users": recent_users_qs,
         })
         return render(request, "dashboard/admin.html", ctx)
 
@@ -66,7 +101,7 @@ def dashboard(request):
             "tutor_profile": getattr(user, "tutor_profile", None),
             "sessions": sessions,
             "session_count": sessions.count(),
-            "upcoming_bookings": upcoming,
+            "upcoming_sessions": upcoming,
             "total_students": Booking.objects.filter(
                 session__tutor=user
             ).values("student").distinct().count(),
@@ -148,17 +183,20 @@ def login_view(request):
         return redirect("dashboard")
     error = None
     if request.method == "POST":
-        email = request.POST.get("email", "").strip()
+        identifier = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
-        try:
-            user_obj = User.objects.get(email=email)
-            user = authenticate(request, username=user_obj.username, password=password)
-        except User.DoesNotExist:
-            user = None
+        # Support login by email or username
+        if "@" in identifier:
+            try:
+                user_obj = User.objects.get(email=identifier)
+                identifier = user_obj.username
+            except User.DoesNotExist:
+                pass
+        user = authenticate(request, username=identifier, password=password)
         if user:
             login(request, user)
             return redirect(request.GET.get("next", "/dashboard/"))
-        error = "Invalid email or password. Please try again."
+        error = "Invalid credentials. Please try again."
     return render(request, "auth/login.html", {"error": error})
 
 
@@ -176,27 +214,21 @@ def register_view(request):
         from lms.djangoapps.users.models import UserProfile
         from lms.djangoapps.tutors.models import TutorProfile
         from lms.djangoapps.parents.models import ParentProfile
-        name = request.POST.get("name", "").strip()
+        first = request.POST.get("first_name", "").strip()
+        last = request.POST.get("last_name", "").strip()
         email = request.POST.get("email", "").strip()
+        username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
-        password2 = request.POST.get("password2", "")
         role = request.POST.get("role", "student")
-        if password != password2:
-            error = "Passwords do not match."
-        elif not name or not email:
-            error = "Name and email are required."
+        if not first or not email or not username:
+            error = "First name, email, and username are required."
         elif User.objects.filter(email=email).exists():
             error = "An account with this email already exists."
+        elif User.objects.filter(username=username).exists():
+            error = "That username is already taken."
+        elif len(password) < 8:
+            error = "Password must be at least 8 characters."
         else:
-            parts = name.split(" ", 1)
-            first = parts[0]
-            last = parts[1] if len(parts) > 1 else ""
-            username = email.split("@")[0]
-            base = username
-            i = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{base}{i}"
-                i += 1
             user = User.objects.create_user(
                 username=username, email=email,
                 first_name=first, last_name=last, password=password,

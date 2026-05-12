@@ -5,6 +5,9 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_ALL_ORIGINS = True
 
+# Disable Google OAuth in dev to avoid system cryptography conflicts
+INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "allauth.socialaccount.providers.google"]
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
