@@ -1,0 +1,99 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block dash_title %}Kids Zone{% endblock %}
+{% block page_title %}Kids Zone 🚀{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'dashboard' %}" class="nav-item">
+  <span class="nav-icon">🏠</span> Home
+</a>
+<a href="{% url 'kids_subjects' %}" class="nav-item">
+  <span class="nav-icon">🪐</span> Subjects
+</a>
+<a href="{% url 'kids_badges' %}" class="nav-item">
+  <span class="nav-icon">⭐</span> My Badges
+</a>
+<a href="{% url 'kids_progress' %}" class="nav-item">
+  <span class="nav-icon">📊</span> Progress
+</a>
+<a href="{% url 'messaging' %}" class="nav-item">
+  <span class="nav-icon">💬</span> Chat
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Kid Welcome -->
+<div class="kids-welcome reveal-on-scroll">
+  <div class="kids-welcome-text">
+    <h2 class="kids-welcome-title">Hi, {{ kid.name|default:user.first_name|default:"Explorer" }}! 🌟</h2>
+    <p class="text-muted">Level {{ kid_progress.level|default:'1' }} Explorer · {{ kid_progress.xp_points|default:'0' }} XP</p>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar" style="width: {{ xp_percentage|default:'0' }}%"></div>
+    </div>
+    <p class="text-sm text-muted mt-1">{{ kid_progress.xp_points|default:'0' }} / {{ xp_next_level|default:'100' }} XP to Level {{ xp_next_level_num|default:'2' }}</p>
+  </div>
+  <div class="kids-welcome-badges">
+    {% for badge in kid_badges|slice:':3' %}
+    <span class="badge-icon" title="{{ badge.name }}">{{ badge.icon }}</span>
+    {% empty %}
+    <span class="badge-icon" title="First Steps">⭐</span>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- React KidsZone mount point -->
+<div id="react-kids-zone"
+  data-kid-id="{{ kid.pk|default:'' }}"
+  data-xp="{{ kid_progress.xp_points|default:'0' }}"
+  data-level="{{ kid_progress.level|default:'1' }}"
+  data-badges='{{ badges_json|default:"[]" }}'>
+</div>
+
+<!-- Fallback: Subject Planets (non-JS) -->
+<noscript>
+<div class="kids-planets">
+  <div class="planet-card planet-math">
+    <div class="planet-icon">➕</div>
+    <h3>Mathematics</h3>
+    <p class="text-muted text-sm">Numbers &amp; Equations</p>
+    <a href="#" class="btn btn-sm btn-primary">Explore</a>
+  </div>
+  <div class="planet-card planet-science">
+    <div class="planet-icon">🔬</div>
+    <h3>Science</h3>
+    <p class="text-muted text-sm">Discover the World</p>
+    <a href="#" class="btn btn-sm btn-primary">Explore</a>
+  </div>
+  <div class="planet-card planet-english">
+    <div class="planet-icon">📖</div>
+    <h3>English</h3>
+    <p class="text-muted text-sm">Words &amp; Stories</p>
+    <a href="#" class="btn btn-sm btn-primary">Explore</a>
+  </div>
+  <div class="planet-card planet-history">
+    <div class="planet-icon">🏛</div>
+    <h3>History</h3>
+    <p class="text-muted text-sm">Stories of the Past</p>
+    <a href="#" class="btn btn-sm btn-primary">Explore</a>
+  </div>
+  <div class="planet-card planet-art">
+    <div class="planet-icon">🎨</div>
+    <h3>Art</h3>
+    <p class="text-muted text-sm">Create &amp; Imagine</p>
+    <a href="#" class="btn btn-sm btn-primary">Explore</a>
+  </div>
+  <div class="planet-card planet-music">
+    <div class="planet-icon">🎵</div>
+    <h3>Music</h3>
+    <p class="text-muted text-sm">Rhythm &amp; Sound</p>
+    <a href="#" class="btn btn-sm btn-primary">Explore</a>
+  </div>
+</div>
+</noscript>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/dist/main.bundle.js' %}" defer></script>
+{% endblock %}

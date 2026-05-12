@@ -1,0 +1,177 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block dash_title %}Student Dashboard{% endblock %}
+{% block page_title %}My Learning{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'dashboard' %}" class="nav-item">
+  <span class="nav-icon">🏠</span> Overview
+</a>
+<a href="{% url 'sessions_list' %}" class="nav-item">
+  <span class="nav-icon">📅</span> My Sessions
+</a>
+<a href="{% url 'tutors_list' %}" class="nav-item">
+  <span class="nav-icon">🔍</span> Find Tutors
+</a>
+<a href="{% url 'bookings_list' %}" class="nav-item">
+  <span class="nav-icon">🗓</span> Bookings
+</a>
+<a href="{% url 'messaging' %}" class="nav-item">
+  <span class="nav-icon">💬</span> Messages
+</a>
+<a href="{% url 'payments_list' %}" class="nav-item">
+  <span class="nav-icon">💳</span> Payments
+</a>
+<a href="{% url 'profile' %}" class="nav-item">
+  <span class="nav-icon">⚙</span> Settings
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Welcome Banner -->
+<div class="welcome-banner reveal-on-scroll">
+  <div>
+    <h2 class="welcome-title">Welcome back, {{ user.first_name|default:user.username }}! 👋</h2>
+    <p class="text-muted">Ready to continue your learning journey?</p>
+  </div>
+  <a href="{% url 'tutors_list' %}" class="btn btn-primary">Find a Tutor</a>
+</div>
+
+<!-- Stats Row -->
+<div class="stats-row">
+  <div class="stat-card stat-card--primary reveal-on-scroll">
+    <div class="stat-icon">📅</div>
+    <div class="stat-body">
+      <p class="stat-label">Upcoming Sessions</p>
+      <p class="stat-value">{{ upcoming_sessions|length|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card stat-card--accent reveal-on-scroll" style="--reveal-delay:100ms">
+    <div class="stat-icon">✅</div>
+    <div class="stat-body">
+      <p class="stat-label">Completed Sessions</p>
+      <p class="stat-value">{{ completed_sessions|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:200ms">
+    <div class="stat-icon">💬</div>
+    <div class="stat-body">
+      <p class="stat-label">Active Tutors</p>
+      <p class="stat-value">{{ active_tutors|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:300ms">
+    <div class="stat-icon">💳</div>
+    <div class="stat-body">
+      <p class="stat-label">Total Spent</p>
+      <p class="stat-value">${{ total_spent|default:'0.00' }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="dashboard-grid">
+  <!-- Upcoming Sessions -->
+  <div class="card col-span-2">
+    <div class="card-header">
+      <h3 class="card-title">Upcoming Sessions</h3>
+      <a href="{% url 'sessions_list' %}" class="link-primary text-sm">View all</a>
+    </div>
+    <div class="card-body">
+      {% if upcoming_sessions %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tutor</th>
+            <th>Subject</th>
+            <th>Date &amp; Time</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in upcoming_sessions %}
+          <tr>
+            <td>{{ session.tutor.get_full_name|default:session.tutor.username }}</td>
+            <td>{{ session.subject }}</td>
+            <td>{{ session.scheduled_at|date:"D, d M Y · H:i" }}</td>
+            <td><span class="badge badge-{{ session.status }}">{{ session.get_status_display }}</span></td>
+            <td><a href="{% url 'session_detail' session.pk %}" class="btn btn-sm btn-outline">Join</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <p class="empty-state-icon">📅</p>
+        <p class="empty-state-text">No upcoming sessions</p>
+        <a href="{% url 'tutors_list' %}" class="btn btn-primary mt-3">Book your first session</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Quick Find Tutor -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Quick Search</h3>
+    </div>
+    <div class="card-body">
+      <form action="{% url 'tutors_list' %}" method="get" class="quick-search-form">
+        <select name="subject" class="form-input mb-3">
+          <option value="">All Subjects</option>
+          <option>Mathematics</option>
+          <option>Physics</option>
+          <option>Chemistry</option>
+          <option>Biology</option>
+          <option>English</option>
+          <option>Computer Science</option>
+          <option>History</option>
+          <option>Geography</option>
+        </select>
+        <input type="number" name="max_rate" class="form-input mb-3"
+          placeholder="Max rate (USD/hr)" min="1">
+        <button type="submit" class="btn btn-primary w-full">🔍 Search Tutors</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Messages -->
+{% if recent_messages %}
+<div class="card mt-4">
+  <div class="card-header">
+    <h3 class="card-title">Recent Messages</h3>
+    <a href="{% url 'messaging' %}" class="link-primary text-sm">View all</a>
+  </div>
+  <div class="card-body">
+    {% for msg in recent_messages %}
+    <div class="message-preview">
+      <div class="avatar-circle avatar-circle--sm">{{ msg.sender.username|first|upper }}</div>
+      <div class="message-preview-body">
+        <p class="message-preview-sender">{{ msg.sender.get_full_name|default:msg.sender.username }}</p>
+        <p class="message-preview-text text-muted">{{ msg.content|truncatechars:80 }}</p>
+      </div>
+      <span class="message-preview-time text-muted text-sm">{{ msg.sent_at|timesince }} ago</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block dash_extra_js %}
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const d = parseInt(e.target.style.getPropertyValue('--reveal-delay')) || 0;
+        setTimeout(() => e.target.classList.add('revealed'), d);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

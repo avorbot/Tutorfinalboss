@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Django
+*.sqlite3
+media/
+static_collected/
+staticfiles/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+secrets.json
+
+# Node / Frontend
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.npm/
+
+# Webpack build output
+lms/static/js/dist/
+cms/static/js/dist/
+*.bundle.js
+*.bundle.js.map
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+jest-coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Docker
+.docker/
+
+# Misc
+*.bak
+*.orig

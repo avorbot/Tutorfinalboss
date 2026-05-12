@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% block dash_title %}Dashboard{% endblock %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout" data-role="{{ role }}">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="Dashboard navigation">
+    <div class="sidebar-header">
+      <a href="{% url 'landing' %}" class="logo">
+        <span class="logo-icon">MT</span>
+        <span class="logo-text">MyTutor</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">&times;</button>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="avatar-circle avatar-circle--lg role-color-{{ role }}">
+        {{ user_initials|default:user.username|first|upper }}
+      </div>
+      <div class="sidebar-user-info">
+        <p class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</p>
+        <span class="badge badge-role-{{ role }}">{{ role|capfirst }}</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      {% block sidebar_nav %}{% endblock %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline w-full sidebar-logout">
+          <span>🚪</span> Sign Out
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="dashboard-main">
+    <!-- Top Header -->
+    <header class="dashboard-header">
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Open menu">☰</button>
+      <div class="dashboard-header-title">
+        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+      <div class="dashboard-header-actions">
+        <div id="react-theme-toggle-inline"></div>
+        <a href="{% url 'messaging' %}" class="icon-btn" title="Messages">💬</a>
+        <div class="dropdown">
+          <button class="avatar-circle dropdown-trigger" aria-haspopup="true">
+            {{ user.username|first|upper }}
+          </button>
+          <div class="dropdown-menu">
+            <a href="{% url 'profile' %}">Profile</a>
+            <a href="{% url 'settings' %}">Settings</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item-btn">Sign Out</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="dashboard-content">
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block dashboard_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Sidebar toggle
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('sidebar-toggle').addEventListener('click', () =>
+    sidebar.classList.toggle('sidebar-open'));
+  document.getElementById('sidebar-close').addEventListener('click', () =>
+    sidebar.classList.remove('sidebar-open'));
+  // Close sidebar on overlay click (mobile)
+  document.addEventListener('click', (e) => {
+    if (sidebar.classList.contains('sidebar-open') &&
+        !sidebar.contains(e.target) &&
+        !document.getElementById('sidebar-toggle').contains(e.target)) {
+      sidebar.classList.remove('sidebar-open');
+    }
+  });
+
+  // Active nav link
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    if (link.href === window.location.href) link.classList.add('active');
+  });
+</script>
+{% block dash_extra_js %}{% endblock %}
+{% endblock %}
