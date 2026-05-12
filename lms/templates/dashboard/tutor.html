@@ -1,0 +1,162 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block dash_title %}Tutor Dashboard{% endblock %}
+{% block page_title %}My Teaching Hub{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'dashboard' %}" class="nav-item">
+  <span class="nav-icon">🏠</span> Overview
+</a>
+<a href="{% url 'sessions_list' %}" class="nav-item">
+  <span class="nav-icon">📅</span> My Sessions
+</a>
+<a href="{% url 'students_list' %}" class="nav-item">
+  <span class="nav-icon">👥</span> Students
+</a>
+<a href="{% url 'bookings_list' %}" class="nav-item">
+  <span class="nav-icon">🗓</span> Bookings
+</a>
+<a href="{% url 'messaging' %}" class="nav-item">
+  <span class="nav-icon">💬</span> Messages
+</a>
+<a href="{% url 'payments_list' %}" class="nav-item">
+  <span class="nav-icon">💳</span> Earnings
+</a>
+<a href="{% url 'cms_dashboard' %}" class="nav-item">
+  <span class="nav-icon">📝</span> Content Studio
+</a>
+<a href="{% url 'profile' %}" class="nav-item">
+  <span class="nav-icon">⚙</span> Settings
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="welcome-banner reveal-on-scroll">
+  <div>
+    <h2 class="welcome-title">Hello, {{ user.first_name|default:user.username }}! 🏫</h2>
+    <p class="text-muted">Manage your sessions and grow your student community.</p>
+  </div>
+  <a href="{% url 'cms_dashboard' %}" class="btn btn-accent">Open Content Studio</a>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card stat-card--primary reveal-on-scroll">
+    <div class="stat-icon">📅</div>
+    <div class="stat-body">
+      <p class="stat-label">Upcoming Sessions</p>
+      <p class="stat-value">{{ upcoming_sessions|length|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card stat-card--accent reveal-on-scroll" style="--reveal-delay:100ms">
+    <div class="stat-icon">👥</div>
+    <div class="stat-body">
+      <p class="stat-label">Total Students</p>
+      <p class="stat-value">{{ total_students|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:200ms">
+    <div class="stat-icon">⭐</div>
+    <div class="stat-body">
+      <p class="stat-label">Rating</p>
+      <p class="stat-value">{{ tutor_profile.rating|default:'—' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:300ms">
+    <div class="stat-icon">💰</div>
+    <div class="stat-body">
+      <p class="stat-label">Monthly Earnings</p>
+      <p class="stat-value">${{ monthly_earnings|default:'0.00' }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Session Management -->
+  <div class="card col-span-2">
+    <div class="card-header">
+      <h3 class="card-title">Upcoming Sessions</h3>
+      <div class="flex gap-2">
+        <a href="{% url 'session_create' %}" class="btn btn-sm btn-primary">+ New Session</a>
+        <a href="{% url 'sessions_list' %}" class="link-primary text-sm">View all</a>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if upcoming_sessions %}
+      <table class="table">
+        <thead>
+          <tr><th>Student</th><th>Subject</th><th>Date &amp; Time</th><th>Price</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for session in upcoming_sessions %}
+          <tr>
+            <td>
+              {% if session.enrollments.first %}
+                {{ session.enrollments.first.student.get_full_name|default:session.enrollments.first.student.username }}
+              {% else %}
+                <span class="text-muted">No enrollees</span>
+              {% endif %}
+            </td>
+            <td>{{ session.subject }}</td>
+            <td>{{ session.scheduled_at|date:"D, d M · H:i" }}</td>
+            <td>${{ session.price }}</td>
+            <td><span class="badge badge-{{ session.status }}">{{ session.get_status_display }}</span></td>
+            <td><a href="{% url 'session_detail' session.pk %}" class="btn btn-sm btn-outline">Manage</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <p class="empty-state-icon">📅</p>
+        <p class="empty-state-text">No upcoming sessions</p>
+        <a href="{% url 'session_create' %}" class="btn btn-primary mt-3">Create first session</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Profile Summary -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">My Profile</h3></div>
+    <div class="card-body">
+      {% if tutor_profile %}
+      <div class="tutor-profile-preview">
+        <div class="avatar-circle avatar-circle--xl role-color-tutor mb-3">
+          {{ user.username|first|upper }}
+        </div>
+        <p class="font-semibold">{{ user.get_full_name|default:user.username }}</p>
+        <p class="text-muted text-sm">{{ tutor_profile.bio|truncatechars:100|default:'No bio yet' }}</p>
+        <div class="subjects-list mt-3">
+          {% for subject in tutor_profile.subject_list %}
+          <span class="badge badge-primary">{{ subject }}</span>
+          {% endfor %}
+        </div>
+        <p class="mt-3"><strong>${{ tutor_profile.hourly_rate }}/hr</strong></p>
+        <a href="{% url 'profile' %}" class="btn btn-outline w-full mt-3">Edit Profile</a>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <p class="empty-state-text">Complete your tutor profile to attract students</p>
+        <a href="{% url 'profile' %}" class="btn btn-primary mt-3">Set Up Profile</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dash_extra_js %}
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const d = parseInt(e.target.style.getPropertyValue('--reveal-delay')) || 0;
+        setTimeout(() => e.target.classList.add('revealed'), d);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

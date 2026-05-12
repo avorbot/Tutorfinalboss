@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-container auth-container--wide">
+    <div class="auth-card card">
+      <div class="auth-header">
+        <div class="logo mb-4">
+          <span class="logo-icon">MT</span>
+          <span class="logo-text">MyTutor</span>
+        </div>
+        <h1 class="auth-title">Create your account</h1>
+        <p class="text-muted">Join 5,000+ learners on MyTutor</p>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-error">⚠ {{ error }}</div>
+      {% endif %}
+
+      <!-- Role Selector -->
+      <div class="role-selector" id="role-selector">
+        <p class="form-label mb-3">I am a…</p>
+        <div class="role-cards">
+          <label class="role-card {% if selected_role == 'student' %}active{% endif %}">
+            <input type="radio" name="role_visual" value="student" hidden
+              {% if selected_role == 'student' %}checked{% endif %}
+              onchange="selectRole('student')">
+            <span class="role-card-icon">🎓</span>
+            <span class="role-card-label">Student</span>
+          </label>
+          <label class="role-card {% if selected_role == 'tutor' %}active{% endif %}">
+            <input type="radio" name="role_visual" value="tutor" hidden
+              {% if selected_role == 'tutor' %}checked{% endif %}
+              onchange="selectRole('tutor')">
+            <span class="role-card-icon">📚</span>
+            <span class="role-card-label">Tutor</span>
+          </label>
+          <label class="role-card {% if selected_role == 'parent' %}active{% endif %}">
+            <input type="radio" name="role_visual" value="parent" hidden
+              {% if selected_role == 'parent' %}checked{% endif %}
+              onchange="selectRole('parent')">
+            <span class="role-card-icon">👨‍👩‍👧</span>
+            <span class="role-card-label">Parent</span>
+          </label>
+          <label class="role-card {% if selected_role == 'kid' %}active{% endif %}">
+            <input type="radio" name="role_visual" value="kid" hidden
+              {% if selected_role == 'kid' %}checked{% endif %}
+              onchange="selectRole('kid')">
+            <span class="role-card-icon">⭐</span>
+            <span class="role-card-label">Kid</span>
+          </label>
+        </div>
+      </div>
+
+      <form method="post" action="{% url 'register' %}" class="auth-form" id="register-form">
+        {% csrf_token %}
+        <input type="hidden" name="role" id="role-input" value="{{ selected_role|default:'student' }}">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name" class="form-input"
+              placeholder="Jane" required value="{{ request.POST.first_name|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name" class="form-input"
+              placeholder="Doe" required value="{{ request.POST.last_name|default:'' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="form-input"
+            placeholder="you@example.com" required autocomplete="email"
+            value="{{ request.POST.email|default:'' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input type="text" id="username" name="username" class="form-input"
+            placeholder="janedoe123" required autocomplete="username"
+            value="{{ request.POST.username|default:'' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password</label>
+          <div class="input-password-wrap">
+            <input type="password" id="reg-password" name="password" class="form-input"
+              placeholder="Min 8 characters" required autocomplete="new-password"
+              minlength="8">
+            <button type="button" class="password-toggle"
+              onclick="togglePassword('reg-password', this)" aria-label="Toggle">👁</button>
+          </div>
+        </div>
+
+        <!-- Tutor-specific fields -->
+        <div id="tutor-fields" style="display:none">
+          <div class="form-group">
+            <label class="form-label" for="subjects">Subjects (comma-separated)</label>
+            <input type="text" id="subjects" name="subjects" class="form-input"
+              placeholder="Mathematics, Physics, Chemistry">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="hourly_rate">Hourly Rate (USD)</label>
+            <input type="number" id="hourly_rate" name="hourly_rate" class="form-input"
+              placeholder="25" min="1" step="0.01">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" id="register-btn">
+          Create Account
+        </button>
+      </form>
+
+      <p class="auth-footer-text">
+        Already have an account?
+        <a href="{% url 'login' %}" class="link-primary">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Pre-select role from URL param
+  const urlRole = new URLSearchParams(window.location.search).get('role');
+  if (urlRole) selectRole(urlRole);
+
+  function selectRole(role) {
+    document.getElementById('role-input').value = role;
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));
+    const card = document.querySelector(`.role-card input[value="${role}"]`);
+    if (card) card.closest('.role-card').classList.add('active');
+    document.getElementById('tutor-fields').style.display = role === 'tutor' ? 'block' : 'none';
+  }
+
+  function togglePassword(id, btn) {
+    const input = document.getElementById(id);
+    input.type = input.type === 'password' ? 'text' : 'password';
+    btn.textContent = input.type === 'password' ? '👁' : '🙈';
+  }
+
+  document.getElementById('register-form').addEventListener('submit', function() {
+    const btn = document.getElementById('register-btn');
+    btn.textContent = 'Creating account…';
+    btn.disabled = true;
+  });
+</script>
+{% endblock %}

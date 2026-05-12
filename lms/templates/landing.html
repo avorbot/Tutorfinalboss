@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home{% endblock %}
+{% block meta_description %}MyTutor – Find expert tutors across 20+ subjects. Personalised sessions, kids zone, and parent portal.{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="container hero-content">
+    <div class="hero-text">
+      <div class="badge badge-accent mb-3">Trusted by 5,000+ learners</div>
+      <h1 class="hero-title">
+        Learn Smarter with
+        <span class="text-gradient">Expert Tutors</span>
+      </h1>
+      <p class="hero-subtitle">
+        Connect with verified tutors across 20+ subjects. Flexible sessions, gamified kids learning, and real-time progress tracking — all in one place.
+      </p>
+      <div class="hero-cta">
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}" class="btn btn-hero">Go to Dashboard</a>
+        {% else %}
+          <a href="{% url 'register' %}" class="btn btn-hero">Get Started Free</a>
+          <a href="{% url 'login' %}" class="btn btn-outline">Sign In</a>
+        {% endif %}
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value text-gradient">500+</span>
+          <span class="hero-stat-label">Expert Tutors</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value text-gradient">5,000+</span>
+          <span class="hero-stat-label">Students</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value text-gradient">20+</span>
+          <span class="hero-stat-label">Subjects</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card card float-animation">
+        <div class="card-body">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="avatar-circle bg-primary">MT</div>
+            <div>
+              <p class="font-semibold">Live Session</p>
+              <p class="text-sm text-muted">Mathematics · Grade 10</p>
+            </div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" style="width:72%"></div>
+          </div>
+          <p class="text-sm text-muted mt-2">Session progress · 72%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header reveal-on-scroll">
+      <div class="badge badge-primary mb-2">Why MyTutor</div>
+      <h2 class="section-title">Everything you need to learn</h2>
+      <p class="section-subtitle">A complete tutoring platform built for students, parents, and educators.</p>
+    </div>
+    <div class="grid grid-3 gap-6 mt-8">
+      {% for feature in features %}
+      <div class="card reveal-on-scroll" style="--reveal-delay: {{ forloop.counter0 }}00ms">
+        <div class="card-body">
+          <div class="feature-icon">{{ feature.icon }}</div>
+          <h3 class="card-title">{{ feature.title }}</h3>
+          <p class="text-muted">{{ feature.description }}</p>
+        </div>
+      </div>
+      {% empty %}
+      <div class="card reveal-on-scroll">
+        <div class="card-body">
+          <div class="feature-icon">🎯</div>
+          <h3 class="card-title">Verified Tutors</h3>
+          <p class="text-muted">Every tutor is vetted and background-checked before joining the platform.</p>
+        </div>
+      </div>
+      <div class="card reveal-on-scroll" style="--reveal-delay: 100ms">
+        <div class="card-body">
+          <div class="feature-icon">📅</div>
+          <h3 class="card-title">Flexible Scheduling</h3>
+          <p class="text-muted">Book sessions at times that work for you, with instant confirmations.</p>
+        </div>
+      </div>
+      <div class="card reveal-on-scroll" style="--reveal-delay: 200ms">
+        <div class="card-body">
+          <div class="feature-icon">🎮</div>
+          <h3 class="card-title">Kids Zone</h3>
+          <p class="text-muted">Gamified learning for children with planets, badges, and XP rewards.</p>
+        </div>
+      </div>
+      <div class="card reveal-on-scroll" style="--reveal-delay: 300ms">
+        <div class="card-body">
+          <div class="feature-icon">👨‍👩‍👧</div>
+          <h3 class="card-title">Parent Portal</h3>
+          <p class="text-muted">Track your child's progress, manage accounts, and control spending.</p>
+        </div>
+      </div>
+      <div class="card reveal-on-scroll" style="--reveal-delay: 400ms">
+        <div class="card-body">
+          <div class="feature-icon">💳</div>
+          <h3 class="card-title">Multiple Payments</h3>
+          <p class="text-muted">Pay with Stripe, PayPal, MTN Mobile Money, Airtel, or Amazon Pay.</p>
+        </div>
+      </div>
+      <div class="card reveal-on-scroll" style="--reveal-delay: 500ms">
+        <div class="card-body">
+          <div class="feature-icon">📊</div>
+          <h3 class="card-title">Progress Analytics</h3>
+          <p class="text-muted">Detailed reports and insights to keep every learner on track.</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- SUBJECTS -->
+<section class="section section-alt" id="subjects">
+  <div class="container">
+    <div class="section-header reveal-on-scroll">
+      <div class="badge badge-accent mb-2">20+ Subjects</div>
+      <h2 class="section-title">Find your perfect tutor</h2>
+    </div>
+    <div class="subjects-grid mt-8">
+      {% for subject in subjects %}
+      <a href="{% url 'tutors_list' %}?subject={{ subject.slug }}" class="subject-pill reveal-on-scroll">
+        <span class="subject-icon">{{ subject.icon }}</span>
+        <span>{{ subject.name }}</span>
+      </a>
+      {% empty %}
+      {% for s in 'Mathematics,Physics,Chemistry,Biology,English,History,Geography,Computer Science,Economics,French,Spanish,Music,Art,Physical Education,Psychology,Accounting' %}
+      <span class="subject-pill">{{ s }}</span>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- THREE PORTALS -->
+<section class="section" id="portals">
+  <div class="container">
+    <div class="section-header reveal-on-scroll">
+      <div class="badge badge-primary mb-2">Three Portals</div>
+      <h2 class="section-title">Designed for everyone</h2>
+      <p class="section-subtitle">One platform, three powerful experiences.</p>
+    </div>
+    <div class="grid grid-3 gap-6 mt-8">
+      <div class="portal-card card reveal-on-scroll">
+        <div class="portal-icon portal-icon--student">🎓</div>
+        <h3 class="portal-title">Student Portal</h3>
+        <ul class="portal-features">
+          <li>Browse &amp; book sessions</li>
+          <li>Live video lessons</li>
+          <li>Progress tracking</li>
+          <li>Direct messaging</li>
+        </ul>
+        <a href="{% url 'register' %}?role=student" class="btn btn-primary w-full mt-4">Join as Student</a>
+      </div>
+      <div class="portal-card card reveal-on-scroll" style="--reveal-delay: 150ms">
+        <div class="portal-icon portal-icon--tutor">📚</div>
+        <h3 class="portal-title">Tutor Portal</h3>
+        <ul class="portal-features">
+          <li>Set your schedule</li>
+          <li>Manage bookings</li>
+          <li>Upload content</li>
+          <li>Track earnings</li>
+        </ul>
+        <a href="{% url 'register' %}?role=tutor" class="btn btn-primary w-full mt-4">Join as Tutor</a>
+      </div>
+      <div class="portal-card card reveal-on-scroll" style="--reveal-delay: 300ms">
+        <div class="portal-icon portal-icon--parent">👨‍👩‍👧</div>
+        <h3 class="portal-title">Parent Portal</h3>
+        <ul class="portal-features">
+          <li>Monitor children</li>
+          <li>Approve sessions</li>
+          <li>Control spending</li>
+          <li>View reports</li>
+        </ul>
+        <a href="{% url 'register' %}?role=parent" class="btn btn-primary w-full mt-4">Join as Parent</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KIDS CTA -->
+<section class="section kids-cta" id="kids">
+  <div class="container">
+    <div class="kids-cta-inner reveal-on-scroll">
+      <div class="kids-cta-text">
+        <div class="badge badge-accent mb-3">Kids Zone</div>
+        <h2 class="section-title">Learning that feels like play</h2>
+        <p class="text-muted">
+          Our gamified Kids Zone makes learning an adventure. Explore subject planets, earn badges, collect XP, and level up — while parents track every milestone.
+        </p>
+        <a href="{% url 'register' %}?role=kid" class="btn btn-accent mt-4">Explore Kids Zone</a>
+      </div>
+      <div class="kids-cta-visual">
+        <div class="planet planet-math pulse-glow">➕</div>
+        <div class="planet planet-science float-animation">🔬</div>
+        <div class="planet planet-english">📖</div>
+        <div class="planet planet-art float-animation" style="animation-delay:.5s">🎨</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span class="logo-icon">MT</span> MyTutor</div>
+        <p class="text-muted mt-2">Connecting learners with expert tutors worldwide.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#subjects">Subjects</a></li>
+          <li><a href="#portals">Portals</a></li>
+          <li><a href="#kids">Kids Zone</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>Account</h4>
+        <ul>
+          <li><a href="{% url 'login' %}">Sign In</a></li>
+          <li><a href="{% url 'register' %}">Register</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 MyTutor Platform. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const delay = e.target.style.getPropertyValue('--reveal-delay') || '0ms';
+        setTimeout(() => e.target.classList.add('revealed'), parseInt(delay));
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

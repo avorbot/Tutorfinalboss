@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Content Studio{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout" data-role="cms">
+  <!-- CMS Sidebar -->
+  <aside class="sidebar" id="cms-sidebar">
+    <div class="sidebar-header">
+      <a href="{% url 'landing' %}" class="logo">
+        <span class="logo-icon">MT</span>
+        <span class="logo-text">Studio</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="avatar-circle avatar-circle--lg role-color-cms">
+        {{ user.username|first|upper }}
+      </div>
+      <div class="sidebar-user-info">
+        <p class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</p>
+        <span class="badge badge-accent">Content Studio</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="{% url 'cms_dashboard' %}" class="nav-item">
+        <span class="nav-icon">🏠</span> Overview
+      </a>
+      <a href="{% url 'cms_library' %}" class="nav-item">
+        <span class="nav-icon">📚</span> Content Library
+      </a>
+      <a href="{% url 'cms_pending' %}" class="nav-item">
+        <span class="nav-icon">⏳</span> Pending Review
+        {% if pending_count %}
+        <span class="badge badge-accent ml-auto">{{ pending_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{% url 'cms_upload' %}" class="nav-item">
+        <span class="nav-icon">⬆</span> Upload Content
+      </a>
+      {% if user.profile.role == 'admin' %}
+      <a href="{% url 'dashboard' %}" class="nav-item">
+        <span class="nav-icon">🔧</span> Admin Panel
+      </a>
+      {% else %}
+      <a href="{% url 'dashboard' %}" class="nav-item">
+        <span class="nav-icon">🏫</span> Teaching Hub
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline w-full sidebar-logout">
+          <span>🚪</span> Sign Out
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- CMS Main -->
+  <div class="dashboard-main">
+    <header class="dashboard-header">
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Open menu">☰</button>
+      <div class="dashboard-header-title">
+        <h1 class="page-title">Content Studio</h1>
+        <span class="badge badge-accent ml-3">CMS</span>
+      </div>
+      <div class="dashboard-header-actions">
+        <a href="{% url 'cms_upload' %}" class="btn btn-accent btn-sm">+ Upload Content</a>
+      </div>
+    </header>
+
+    <div class="dashboard-content">
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card stat-card--accent">
+          <div class="stat-icon">📝</div>
+          <div class="stat-body">
+            <p class="stat-label">My Submissions</p>
+            <p class="stat-value">{{ my_submissions|length|default:'0' }}</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-body">
+            <p class="stat-label">Approved</p>
+            <p class="stat-value">{{ approved_count|default:'0' }}</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-body">
+            <p class="stat-label">Pending Review</p>
+            <p class="stat-value text-accent">{{ pending_count|default:'0' }}</p>
+          </div>
+        </div>
+        {% if user.profile.role == 'admin' %}
+        <div class="stat-card stat-card--primary">
+          <div class="stat-icon">📚</div>
+          <div class="stat-body">
+            <p class="stat-label">Total Library</p>
+            <p class="stat-value">{{ total_content|default:'0' }}</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Content Grid -->
+      <div class="dashboard-grid mt-4">
+        <!-- My Submissions -->
+        <div class="card col-span-2">
+          <div class="card-header">
+            <h3 class="card-title">My Submissions</h3>
+            <a href="{% url 'cms_upload' %}" class="btn btn-sm btn-accent">+ New</a>
+          </div>
+          <div class="card-body">
+            {% if my_submissions %}
+            <table class="table">
+              <thead>
+                <tr><th>Title</th><th>Type</th><th>Session</th><th>Status</th><th>Date</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for sub in my_submissions %}
+                <tr>
+                  <td>{{ sub.title }}</td>
+                  <td>
+                    <span class="badge badge-{% if sub.content_type == 'video' %}primary{% elif sub.content_type == 'document' %}accent{% else %}default{% endif %}">
+                      {{ sub.get_content_type_display }}
+                    </span>
+                  </td>
+                  <td>{{ sub.session.subject|default:'—' }}</td>
+                  <td>
+                    <span class="badge badge-{% if sub.status == 'approved' %}success{% elif sub.status == 'pending' %}warning{% else %}danger{% endif %}">
+                      {{ sub.get_status_display }}
+                    </span>
+                  </td>
+                  <td>{{ sub.submitted_at|date:"d M Y" }}</td>
+                  <td>
+                    <a href="{% url 'cms_submission_detail' sub.pk %}" class="btn btn-sm btn-outline">View</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+              <p class="empty-state-icon">📝</p>
+              <p class="empty-state-text">No submissions yet</p>
+              <a href="{% url 'cms_upload' %}" class="btn btn-accent mt-3">Upload your first content</a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Admin: Pending Review Queue -->
+        {% if user.profile.role == 'admin' %}
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Review Queue</h3>
+            <a href="{% url 'cms_pending' %}" class="link-primary text-sm">View all</a>
+          </div>
+          <div class="card-body">
+            {% if pending_submissions %}
+            {% for sub in pending_submissions|slice:':5' %}
+            <div class="review-item">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-semibold">{{ sub.title }}</p>
+                  <p class="text-sm text-muted">{{ sub.submitted_by.get_full_name|default:sub.submitted_by.username }}</p>
+                </div>
+                <span class="badge badge-{% if sub.content_type == 'video' %}primary{% else %}accent{% endif %}">
+                  {{ sub.get_content_type_display }}
+                </span>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <form method="post" action="{% url 'cms_approve' sub.pk %}" style="display:inline">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-primary">✓ Approve</button>
+                </form>
+                <form method="post" action="{% url 'cms_reject' sub.pk %}" style="display:inline">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-danger">✗ Reject</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+              <p class="empty-state-icon">✅</p>
+              <p class="empty-state-text">Queue is empty</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <!-- Tutor: Upload Guide -->
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">Upload Guide</h3></div>
+          <div class="card-body">
+            <div class="upload-guide">
+              <div class="upload-step">
+                <div class="upload-step-num">1</div>
+                <div>
+                  <p class="font-semibold">Choose content type</p>
+                  <p class="text-sm text-muted">Video, document, quiz, or exercise</p>
+                </div>
+              </div>
+              <div class="upload-step">
+                <div class="upload-step-num">2</div>
+                <div>
+                  <p class="font-semibold">Link to a session</p>
+                  <p class="text-sm text-muted">Associate with one of your sessions</p>
+                </div>
+              </div>
+              <div class="upload-step">
+                <div class="upload-step-num">3</div>
+                <div>
+                  <p class="font-semibold">Submit for review</p>
+                  <p class="text-sm text-muted">Admin reviews within 24 hours</p>
+                </div>
+              </div>
+            </div>
+            <a href="{% url 'cms_upload' %}" class="btn btn-accent w-full mt-4">Start Uploading</a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const sidebar = document.getElementById('cms-sidebar');
+  document.getElementById('sidebar-toggle').addEventListener('click', () =>
+    sidebar.classList.toggle('sidebar-open'));
+  document.getElementById('sidebar-close').addEventListener('click', () =>
+    sidebar.classList.remove('sidebar-open'));
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    if (link.href === window.location.href) link.classList.add('active');
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,216 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block dash_title %}Admin Dashboard{% endblock %}
+{% block page_title %}Platform Administration{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'dashboard' %}" class="nav-item">
+  <span class="nav-icon">🏠</span> Overview
+</a>
+<a href="{% url 'admin_users' %}" class="nav-item">
+  <span class="nav-icon">👥</span> Users
+</a>
+<a href="{% url 'admin_tutors' %}" class="nav-item">
+  <span class="nav-icon">✅</span> Tutor Approvals
+</a>
+<a href="{% url 'admin_sessions' %}" class="nav-item">
+  <span class="nav-icon">📅</span> Sessions
+</a>
+<a href="{% url 'admin_payments' %}" class="nav-item">
+  <span class="nav-icon">💳</span> Payments
+</a>
+<a href="{% url 'admin_submissions' %}" class="nav-item">
+  <span class="nav-icon">📝</span> Submissions
+</a>
+<a href="{% url 'cms_dashboard' %}" class="nav-item">
+  <span class="nav-icon">📚</span> Content Studio
+</a>
+<a href="/admin/" class="nav-item" target="_blank">
+  <span class="nav-icon">🔧</span> Django Admin
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="welcome-banner reveal-on-scroll">
+  <div>
+    <h2 class="welcome-title">Platform Overview 🛡</h2>
+    <p class="text-muted">Manage users, approve tutors, and monitor platform activity.</p>
+  </div>
+  <a href="{% url 'admin_users' %}" class="btn btn-accent">Manage Users</a>
+</div>
+
+<!-- Platform Stats -->
+<div class="stats-row">
+  <div class="stat-card stat-card--primary reveal-on-scroll">
+    <div class="stat-icon">👥</div>
+    <div class="stat-body">
+      <p class="stat-label">Total Users</p>
+      <p class="stat-value">{{ stats.total_users|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:100ms">
+    <div class="stat-icon">📚</div>
+    <div class="stat-body">
+      <p class="stat-label">Tutors</p>
+      <p class="stat-value">{{ stats.total_tutors|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:200ms">
+    <div class="stat-icon">🎓</div>
+    <div class="stat-body">
+      <p class="stat-label">Students</p>
+      <p class="stat-value">{{ stats.total_students|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card stat-card--accent reveal-on-scroll" style="--reveal-delay:300ms">
+    <div class="stat-icon">💰</div>
+    <div class="stat-body">
+      <p class="stat-label">Total Revenue</p>
+      <p class="stat-value">${{ stats.total_revenue|default:'0.00' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:400ms">
+    <div class="stat-icon">📅</div>
+    <div class="stat-body">
+      <p class="stat-label">Total Sessions</p>
+      <p class="stat-value">{{ stats.total_sessions|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:500ms">
+    <div class="stat-icon">⏳</div>
+    <div class="stat-body">
+      <p class="stat-label">Pending Approvals</p>
+      <p class="stat-value text-accent">{{ stats.pending_tutors|default:'0' }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Pending Tutor Approvals -->
+  <div class="card col-span-2">
+    <div class="card-header">
+      <h3 class="card-title">Pending Tutor Approvals</h3>
+      <a href="{% url 'admin_tutors' %}" class="link-primary text-sm">View all</a>
+    </div>
+    <div class="card-body">
+      {% if pending_tutors %}
+      <table class="table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Subjects</th><th>Rate</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for tutor in pending_tutors %}
+          <tr>
+            <td>{{ tutor.user.get_full_name|default:tutor.user.username }}</td>
+            <td>{{ tutor.user.email }}</td>
+            <td>
+              {% for s in tutor.subject_list %}
+              <span class="badge badge-primary">{{ s }}</span>
+              {% endfor %}
+            </td>
+            <td>${{ tutor.hourly_rate }}/hr</td>
+            <td class="flex gap-2">
+              <form method="post" action="{% url 'admin_approve_tutor' tutor.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-primary">Approve</button>
+              </form>
+              <form method="post" action="{% url 'admin_delete_user' tutor.user.pk %}" style="display:inline"
+                onsubmit="return confirm('Delete this user?')">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-danger">Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <p class="empty-state-icon">✅</p>
+        <p class="empty-state-text">No pending approvals</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Submissions -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Content Queue</h3>
+      <a href="{% url 'admin_submissions' %}" class="link-primary text-sm">View all</a>
+    </div>
+    <div class="card-body">
+      {% if pending_submissions %}
+      {% for sub in pending_submissions %}
+      <div class="submission-item">
+        <div class="submission-meta">
+          <span class="badge badge-{{ sub.content_type }}">{{ sub.get_content_type_display }}</span>
+          <span class="text-sm text-muted">{{ sub.submitted_at|date:"d M" }}</span>
+        </div>
+        <p class="submission-title">{{ sub.title }}</p>
+        <p class="submission-author text-sm text-muted">by {{ sub.submitted_by.get_full_name|default:sub.submitted_by.username }}</p>
+        <div class="flex gap-2 mt-2">
+          <a href="{% url 'cms_review' sub.pk %}" class="btn btn-sm btn-primary">Review</a>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty-state">
+        <p class="empty-state-icon">📝</p>
+        <p class="empty-state-text">No pending content</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Recent Users -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h3 class="card-title">Recent Registrations</h3>
+    <a href="{% url 'admin_users' %}" class="link-primary text-sm">View all users</a>
+  </div>
+  <div class="card-body">
+    {% if recent_users %}
+    <table class="table">
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in recent_users %}
+        <tr>
+          <td>{{ u.get_full_name|default:u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>
+            <span class="badge badge-role-{{ u.profile.role }}">{{ u.profile.get_role_display }}</span>
+          </td>
+          <td>{{ u.date_joined|date:"d M Y" }}</td>
+          <td>
+            <a href="{% url 'admin_user_detail' u.pk %}" class="btn btn-sm btn-outline">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No users yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block dash_extra_js %}
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const d = parseInt(e.target.style.getPropertyValue('--reveal-delay')) || 0;
+        setTimeout(() => e.target.classList.add('revealed'), d);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

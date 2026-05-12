@@ -1,0 +1,180 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block dash_title %}Parent Dashboard{% endblock %}
+{% block page_title %}Parent Portal{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'dashboard' %}" class="nav-item">
+  <span class="nav-icon">🏠</span> Overview
+</a>
+<a href="{% url 'parent_kids' %}" class="nav-item">
+  <span class="nav-icon">👦</span> My Children
+</a>
+<a href="{% url 'parent_progress' %}" class="nav-item">
+  <span class="nav-icon">📊</span> Progress Reports
+</a>
+<a href="{% url 'parent_sessions' %}" class="nav-item">
+  <span class="nav-icon">📅</span> Sessions
+</a>
+<a href="{% url 'payments_list' %}" class="nav-item">
+  <span class="nav-icon">💳</span> Payments
+</a>
+<a href="{% url 'messaging' %}" class="nav-item">
+  <span class="nav-icon">💬</span> Messages
+</a>
+<a href="{% url 'profile' %}" class="nav-item">
+  <span class="nav-icon">⚙</span> Settings
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="welcome-banner reveal-on-scroll">
+  <div>
+    <h2 class="welcome-title">Welcome, {{ user.first_name|default:user.username }}! 👨‍👩‍👧</h2>
+    <p class="text-muted">Track your children's learning progress.</p>
+  </div>
+  <a href="{% url 'parent_kids' %}?action=add" class="btn btn-primary">+ Add Child</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card stat-card--primary reveal-on-scroll">
+    <div class="stat-icon">👦</div>
+    <div class="stat-body">
+      <p class="stat-label">Children</p>
+      <p class="stat-value">{{ kids|length|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card reveal-on-scroll" style="--reveal-delay:100ms">
+    <div class="stat-icon">📅</div>
+    <div class="stat-body">
+      <p class="stat-label">Total Sessions</p>
+      <p class="stat-value">{{ total_kid_sessions|default:'0' }}</p>
+    </div>
+  </div>
+  <div class="stat-card stat-card--accent reveal-on-scroll" style="--reveal-delay:200ms">
+    <div class="stat-icon">💳</div>
+    <div class="stat-body">
+      <p class="stat-label">Monthly Spend</p>
+      <p class="stat-value">${{ monthly_spend|default:'0.00' }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Children Cards -->
+<div class="section-header mt-6 mb-4">
+  <h3 class="card-title">My Children</h3>
+  <a href="{% url 'parent_kids' %}?action=add" class="btn btn-sm btn-primary">+ Add Child</a>
+</div>
+
+{% if kids %}
+<div class="grid grid-3 gap-4">
+  {% for kid in kids %}
+  <div class="card kid-card reveal-on-scroll">
+    <div class="kid-card-header">
+      <div class="avatar-circle avatar-circle--lg role-color-kid">
+        {{ kid.name|first|upper }}
+      </div>
+      <div>
+        <h4 class="font-semibold">{{ kid.name }}</h4>
+        <p class="text-sm text-muted">Age {{ kid.age }}</p>
+      </div>
+    </div>
+    {% if kid.progress %}
+    <div class="kid-progress mt-3">
+      <div class="flex justify-between text-sm mb-1">
+        <span>Level {{ kid.progress.level }}</span>
+        <span class="text-muted">{{ kid.progress.xp_points }} XP</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" style="width: {{ kid.progress.xp_percentage|default:'0' }}%"></div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="kid-card-footer mt-3 flex gap-2">
+      <a href="{% url 'parent_kid_progress' kid.pk %}" class="btn btn-sm btn-outline">View Progress</a>
+      <a href="{% url 'kids_view' %}?kid={{ kid.pk }}" class="btn btn-sm btn-primary">Switch to Kid</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <p class="empty-state-icon">👦</p>
+  <p class="empty-state-text">No children added yet</p>
+  <a href="{% url 'parent_kids' %}?action=add" class="btn btn-primary mt-3">Add Your First Child</a>
+</div>
+{% endif %}
+
+<!-- Recent Activity -->
+{% if recent_activity %}
+<div class="card mt-6">
+  <div class="card-header">
+    <h3 class="card-title">Recent Activity</h3>
+  </div>
+  <div class="card-body">
+    {% for activity in recent_activity %}
+    <div class="activity-item">
+      <span class="activity-icon">{{ activity.icon|default:'📌' }}</span>
+      <div class="activity-body">
+        <p class="activity-text">{{ activity.description }}</p>
+        <p class="text-sm text-muted">{{ activity.created_at|timesince }} ago</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- PIN Modal (for switching to kids view) -->
+<div class="modal" id="pin-modal" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title" hidden>
+  <div class="modal-overlay" onclick="closePinModal()"></div>
+  <div class="modal-content card">
+    <h3 id="pin-modal-title" class="card-title mb-4">Enter Parent PIN</h3>
+    <form method="post" action="{% url 'parent_verify_pin' %}">
+      {% csrf_token %}
+      <input type="hidden" name="kid_id" id="pin-kid-id">
+      <div class="pin-inputs">
+        <input type="password" maxlength="1" class="pin-input form-input" inputmode="numeric" pattern="[0-9]">
+        <input type="password" maxlength="1" class="pin-input form-input" inputmode="numeric" pattern="[0-9]">
+        <input type="password" maxlength="1" class="pin-input form-input" inputmode="numeric" pattern="[0-9]">
+        <input type="password" maxlength="1" class="pin-input form-input" inputmode="numeric" pattern="[0-9]">
+      </div>
+      <input type="hidden" name="pin" id="pin-value">
+      <div class="flex gap-3 mt-4">
+        <button type="button" onclick="closePinModal()" class="btn btn-outline flex-1">Cancel</button>
+        <button type="submit" class="btn btn-primary flex-1">Confirm</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block dash_extra_js %}
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const d = parseInt(e.target.style.getPropertyValue('--reveal-delay')) || 0;
+        setTimeout(() => e.target.classList.add('revealed'), d);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+
+  // PIN input auto-advance
+  document.querySelectorAll('.pin-input').forEach((input, i, inputs) => {
+    input.addEventListener('input', () => {
+      if (input.value && i < inputs.length - 1) inputs[i + 1].focus();
+      const pin = Array.from(inputs).map(inp => inp.value).join('');
+      document.getElementById('pin-value').value = pin;
+    });
+  });
+
+  function closePinModal() {
+    document.getElementById('pin-modal').hidden = true;
+  }
+</script>
+{% endblock %}

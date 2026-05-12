@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{% block meta_description %}MyTutor – Connect with expert tutors for personalised learning{% endblock %}">
+  <title>{% block title %}MyTutor{% endblock %} | MyTutor Platform</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  {% load static %}
+  <!-- Design system -->
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- React: Theme Toggle -->
+  <div id="react-theme-toggle"></div>
+
+  <!-- React: Navbar -->
+  <div id="react-navbar"
+    data-authenticated="{{ user.is_authenticated|lower }}"
+    data-role="{{ request.session.role|default:'' }}"
+    data-username="{{ user.username|default:'' }}"></div>
+
+  <!-- Page Content -->
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Flash Messages -->
+  {% if messages %}
+  <div class="toast-container" id="toast-container">
+    {% for message in messages %}
+    <div class="toast toast-{{ message.tags }}" role="alert">
+      <span>{{ message }}</span>
+      <button onclick="this.parentElement.remove()" aria-label="Close">&times;</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Webpack bundle -->
+  <script src="{% static 'js/dist/main.bundle.js' %}" defer></script>
+
+  {% block extra_js %}{% endblock %}
+
+  <script>
+    // Auto-dismiss toasts after 4 seconds
+    setTimeout(() => {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+    }, 4000);
+  </script>
+</body>
+</html>
